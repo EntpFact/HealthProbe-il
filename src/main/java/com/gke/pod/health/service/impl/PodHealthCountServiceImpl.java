@@ -3,7 +3,6 @@ package com.gke.pod.health.service.impl;
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
 import io.kubernetes.client.openapi.models.V1PodList;
-import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,12 +20,26 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     }
 
     @Override
+    public int getTotalHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName) {
+        return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)).count();
+    }
+
+    @Override
+    public int getHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName) {
+        return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
+       && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
+    }
+
+
+
+
+    @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {
 
         PodHealthResponse podHealthResponse=new PodHealthResponse();
         podHealthResponse.setTotalPodCount(totalPodCount);
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
-        if(totalHealthyPodCount<=3)
+        if(totalHealthyPodCount<(0.7*totalPodCount))
         {
             podHealthResponse.setApplicationHealthStatus("Application is not in healthy state");
         }else{

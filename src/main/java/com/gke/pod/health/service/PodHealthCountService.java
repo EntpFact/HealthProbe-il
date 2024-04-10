@@ -11,6 +11,10 @@ public interface PodHealthCountService {
 
     public int getHealthyPodCount(V1PodList v1PodList);
 
+    int getTotalHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName);
+
+    int getHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName);
+
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount);
 
 

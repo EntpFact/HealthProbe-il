@@ -7,6 +7,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Config;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -19,6 +20,7 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/podhealth")
+@Slf4j
 public class PodHealthMonitorController {
 
     @Autowired
@@ -34,11 +36,18 @@ public class PodHealthMonitorController {
         String namespace="default";
         V1PodList podList= api.listNamespacedPod(namespace).execute();
 
-        int totalPodCount= podHealthCountService.getTotalPodCount(podList);
-        int healthPodCount= podHealthCountService.getHealthyPodCount(podList);
+   /*     int totalPodCount= podHealthCountService.getTotalPodCount(podList);
+        int healthPodCount= podHealthCountService.getHealthyPodCount(podList);*/
 
-        PodHealthResponse podHealthResponse=podHealthCountService.getApplicationHealthStatus(totalPodCount,healthPodCount);
-        return new ResponseEntity<>(podHealthResponse, HttpStatus.ACCEPTED);
+       int totalHealthPodCountUsingServiceName= podHealthCountService.getTotalHealthyPodCountUsingServiceName(podList,"pod-healthcheck-demo-app");
+
+       log.info("totalHealthPodCountUsingServiceName::::::"+totalHealthPodCountUsingServiceName);
+        int healthPodCountOnBasisOfService=podHealthCountService.getHealthyPodCountUsingServiceName(podList,"pod-healthcheck-demo-app");
+
+        log.info("healthPodCountOnBasisOfService::::::"+healthPodCountOnBasisOfService);
+        PodHealthResponse podHealthResponse=podHealthCountService.getApplicationHealthStatus(totalHealthPodCountUsingServiceName,healthPodCountOnBasisOfService);
+
+        return new ResponseEntity<>(podHealthResponse, HttpStatus.OK);
     }
 
 

@@ -1,8 +1,11 @@
 package com.gke.pod.health.service;
 
 import com.gke.pod.health.entity.PodHealthResponse;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1PodList;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
 
 
 public interface PodHealthCountService {
@@ -17,7 +20,7 @@ public interface PodHealthCountService {
 
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount);
 
-    public int countNumberOfRunningServices();
+    public int countNumberOfRunningServices() throws IOException, ApiException;
 
 
 }

@@ -2,13 +2,22 @@ package com.gke.pod.health.service.impl;
 
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
-import io.fabric8.kubernetes.api.model.ServiceList;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClient;
+
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1Condition;
 import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.V1Service;
+import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.proto.V1;
+import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -42,6 +51,8 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
 
 
+
+
     @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {
 
@@ -58,14 +69,30 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     }
 
     @Override
-    public int countNumberOfRunningServices() {
+    public int countNumberOfRunningServices() throws IOException, ApiException {
 
-        KubernetesClient kubernetesClient=new DefaultKubernetesClient();
-        ServiceList serviceList=kubernetesClient.services().list();
-        log.info("serviceList:::::::::"+ serviceList);
-        int totalService=serviceList.getItems().size();
-        log.info("serviceCount:::::"+ totalService);
-        return (int) serviceList.getItems().stream().filter(service -> service.getStatus().equals("Running")).count();
+        ApiClient client= Config.defaultClient();
+        Configuration.setDefaultApiClient(client);
 
+        CoreV1Api api=new CoreV1Api();
+        int runningServiceCount=0;
+        V1ServiceList serviceList=api.listServiceForAllNamespaces().execute();
+        log.info("serviceList::::" +serviceList);
+        for(V1Service service:serviceList.getItems()){
+            if(service.getStatus()!=null && service.getStatus().getConditions()!=null);
+            {
+                for(V1Condition condition:service.getStatus().getConditions()){
+                    if("True".equalsIgnoreCase(condition.getStatus()) && "Ready".equalsIgnoreCase(condition.getType())){
+                        runningServiceCount++;
+                        break;
+                    }
+
+            }
+
+            }
+        }
+        log.info("runningServiceCount:::::"+runningServiceCount);
+
+        return runningServiceCount;
     }
 }

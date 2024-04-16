@@ -39,6 +39,9 @@ public class PodHealthMonitorController {
    /*     int totalPodCount= podHealthCountService.getTotalPodCount(podList);
         int healthPodCount= podHealthCountService.getHealthyPodCount(podList);*/
 
+        int totalServiceCount=podHealthCountService.countNumberOfRunningServices();
+        log.info("running services::::::" +totalServiceCount);
+
        int totalHealthPodCountUsingServiceName= podHealthCountService.getTotalHealthyPodCountUsingServiceName(podList,"pod-healthcheck-demo-app");
 
        log.info("totalHealthPodCountUsingServiceName::::::"+totalHealthPodCountUsingServiceName);

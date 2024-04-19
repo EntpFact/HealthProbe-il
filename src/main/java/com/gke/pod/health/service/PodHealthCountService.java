@@ -20,7 +20,7 @@ public interface PodHealthCountService {
 
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount);
 
-    public int countNumberOfRunningServices() throws IOException, ApiException;
+
 
 
 }

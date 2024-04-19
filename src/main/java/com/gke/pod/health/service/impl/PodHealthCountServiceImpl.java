@@ -44,31 +44,22 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
        && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
     }
-
-
-
-
-
-
-
-
-
     @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {
 
         PodHealthResponse podHealthResponse=new PodHealthResponse();
         podHealthResponse.setTotalPodCount(totalPodCount);
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
-        if(totalHealthyPodCount<(0.7*totalPodCount))
+        if(totalPodCount==totalHealthyPodCount)
         {
-            podHealthResponse.setApplicationHealthStatus("Application is not in healthy state");
-        }else{
             podHealthResponse.setApplicationHealthStatus("Application is in healthy state");
+        }else{
+            podHealthResponse.setApplicationHealthStatus("Application is not in healthy state");
         }
         return podHealthResponse;
     }
 
-    @Override
+  /*  @Override
     public int countNumberOfRunningServices() throws IOException, ApiException {
 
         ApiClient client= Config.defaultClient();
@@ -94,5 +85,5 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         log.info("runningServiceCount:::::"+runningServiceCount);
 
         return runningServiceCount;
-    }
+    }*/
 }

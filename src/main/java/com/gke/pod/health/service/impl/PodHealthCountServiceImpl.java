@@ -1,27 +1,42 @@
 package com.gke.pod.health.service.impl;
 
+import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
-
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1Condition;
 import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.openapi.models.V1Service;
-import io.kubernetes.client.openapi.models.V1ServiceList;
-import io.kubernetes.client.proto.V1;
 import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
 public class PodHealthCountServiceImpl implements PodHealthCountService {
+
+
+    @Value("${health.namespace.value}")
+    private String nameSpaceValue;
+
+    @Value("${health.applicationlist}")
+    private String applications;
+
+    @Value("${health.application.criteria}")
+    private String criteria;
+
+
+    @Value("#{${health.servicelist}}")
+    private Map<String,String> serviceMap;
+
+
 
 
     @Override
@@ -47,43 +62,81 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {
 
+
         PodHealthResponse podHealthResponse=new PodHealthResponse();
         podHealthResponse.setTotalPodCount(totalPodCount);
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
-        if(totalPodCount==totalHealthyPodCount)
-        {
-            podHealthResponse.setApplicationHealthStatus("Application is in healthy state");
-        }else{
-            podHealthResponse.setApplicationHealthStatus("Application is not in healthy state");
+
+        if(criteria.equalsIgnoreCase(HealthCheckConstants.PERCENTAGE)){
+            if(totalHealthyPodCount<(0.7*totalPodCount)){
+                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
+            }else{
+                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
+            }
+        }else {
+            if(totalPodCount==totalHealthyPodCount)
+            {
+                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
+            }else{
+                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
+            }
+
         }
         return podHealthResponse;
     }
 
-  /*  @Override
-    public int countNumberOfRunningServices() throws IOException, ApiException {
+    @Override
+    public void checkHealthStatusOfApplication() {
 
-        ApiClient client= Config.defaultClient();
-        Configuration.setDefaultApiClient(client);
+    }
 
-        CoreV1Api api=new CoreV1Api();
-        int runningServiceCount=0;
-        V1ServiceList serviceList=api.listServiceForAllNamespaces().execute();
-        log.info("serviceList::::" +serviceList);
-        for(V1Service service:serviceList.getItems()){
-            if(service.getStatus()!=null && service.getStatus().getConditions()!=null);
-            {
-                for(V1Condition condition:service.getStatus().getConditions()){
-                    if("True".equalsIgnoreCase(condition.getStatus()) && "Ready".equalsIgnoreCase(condition.getType())){
-                        runningServiceCount++;
-                        break;
-                    }
+    @Override
+    public V1PodList fetchPodList() throws IOException, ApiException {
 
-            }
+        ApiClient apiClient= Config.defaultClient();
+        CoreV1Api api=new CoreV1Api(apiClient);
+        V1PodList podList= api.listNamespacedPod(nameSpaceValue).execute();
+        return podList;
+    }
 
+    @Override
+    public PodHealthResponse fetchApplicationStatus(V1PodList podList) {
+        PodHealthResponse podHealthResponse=null;
+
+        Map<String,String> map=new HashMap<>();
+        log.info("applications :::::: " + applications);
+        List<String> serviceList = Arrays.stream(applications.split(",")).toList();
+        log.info(" services list size :::::: " + serviceList.size());
+
+        for (String serviceName : serviceList) {
+
+            int totalHealthPodCountUsingServiceName = getTotalHealthyPodCountUsingServiceName(podList, serviceName);
+
+            log.info("totalHealthPodCountUsingServiceName::::::" + totalHealthPodCountUsingServiceName + "serviceName:::: " + serviceName);
+            int healthPodCountOnBasisOfService = getHealthyPodCountUsingServiceName(podList, serviceName);
+            log.info("healthPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService + "serviceName:::: " + serviceName);
+            podHealthResponse = getApplicationHealthStatus(totalHealthPodCountUsingServiceName, healthPodCountOnBasisOfService);
+            log.info("healthPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService);
+
+            if(serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)){
+                map.put(serviceName,podHealthResponse.getApplicationHealthStatus());
             }
         }
-        log.info("runningServiceCount:::::"+runningServiceCount);
+        podHealthResponse.setServiceHealthChecks(map);
+        
+        String status=checkApplicationStatusBasedOnServiceFlag(map);
+        podHealthResponse.setApplicationHealthStatus(status);
+        
+        return podHealthResponse;
+    }
 
-        return runningServiceCount;
-    }*/
+    private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
+
+        if(map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+            return HealthCheckConstants.NOT_HEALTHY;
+        }
+        return HealthCheckConstants.HEALTHY;
+    }
+
+
 }

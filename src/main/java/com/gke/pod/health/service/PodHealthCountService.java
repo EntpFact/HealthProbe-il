@@ -20,9 +20,6 @@ public interface PodHealthCountService {
 
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount);
 
-
-    void checkHealthStatusOfApplication();
-
     V1PodList fetchPodList() throws IOException, ApiException;
 
     PodHealthResponse fetchApplicationStatus(V1PodList podList);

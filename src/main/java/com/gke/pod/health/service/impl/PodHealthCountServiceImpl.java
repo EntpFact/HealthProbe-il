@@ -7,6 +7,7 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -85,10 +86,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         return podHealthResponse;
     }
 
-    @Override
-    public void checkHealthStatusOfApplication() {
 
-    }
 
     @Override
     public V1PodList fetchPodList() throws IOException, ApiException {
@@ -98,6 +96,8 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         V1PodList podList= api.listNamespacedPod(nameSpaceValue).execute();
         return podList;
     }
+
+
 
     @Override
     public PodHealthResponse fetchApplicationStatus(V1PodList podList) {
@@ -129,6 +129,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         
         return podHealthResponse;
     }
+
 
     private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
 

@@ -68,7 +68,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         podHealthResponse.setTotalPodCount(totalPodCount);
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
 
-        if(criteria.equalsIgnoreCase(HealthCheckConstants.PERCENTAGE)){
+        if((criteria != null || criteria != "") && criteria.equalsIgnoreCase(HealthCheckConstants.PERCENTAGE)){
             if(totalHealthyPodCount<(0.7*totalPodCount)){
                 podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
             }else{

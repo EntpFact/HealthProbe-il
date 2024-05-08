@@ -7,7 +7,6 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -69,22 +68,34 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
 
         if((criteria != null || criteria != "") && criteria.equalsIgnoreCase(HealthCheckConstants.PERCENTAGE)){
-            if(totalHealthyPodCount<(0.7*totalPodCount)){
-                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
-            }else{
-                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
-            }
-        }else {
-            if(totalPodCount==totalHealthyPodCount)
-            {
-                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
-            }else{
-                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
-            }
-
+            return statusCheckForPecentage(totalPodCount, totalHealthyPodCount, podHealthResponse);
+        } else {
+           return statusCheckForOther(totalPodCount, totalHealthyPodCount, podHealthResponse);
         }
+
+    }
+
+    private static PodHealthResponse statusCheckForOther(int totalPodCount, int totalHealthyPodCount, PodHealthResponse podHealthResponse) {
+        return (totalPodCount==totalHealthyPodCount)?checkHealthy(podHealthResponse):checkNotHealthy(podHealthResponse);
+
+    }
+
+    private static PodHealthResponse statusCheckForPecentage(int totalPodCount, int totalHealthyPodCount, PodHealthResponse podHealthResponse) {
+        return (totalHealthyPodCount < (0.7 * totalPodCount))?checkNotHealthy(podHealthResponse):checkHealthy(podHealthResponse);
+    }
+
+
+
+    private static  PodHealthResponse checkHealthy(PodHealthResponse podHealthResponse){
+       podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
+       return podHealthResponse;
+    }
+
+    private static  PodHealthResponse checkNotHealthy(PodHealthResponse podHealthResponse){
+        podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
         return podHealthResponse;
     }
+
 
 
 
@@ -118,26 +129,20 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
             podHealthResponse = getApplicationHealthStatus(totalHealthPodCountUsingServiceName, healthPodCountOnBasisOfService);
             log.info("healthPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService);
 
-            if(serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)){
-                map.put(serviceName,podHealthResponse.getApplicationHealthStatus());
+
+            if(serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG) && podHealthResponse.getServiceHealthChecks().equals(HealthCheckConstants.HEALTHY))
+            {
+                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
+              //  map.put(serviceName, podHealthResponse.getApplicationHealthStatus());
+            }else {
+                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
+                break;
             }
         }
-        podHealthResponse.setServiceHealthChecks(map);
-        
-        String status=checkApplicationStatusBasedOnServiceFlag(map);
-        podHealthResponse.setApplicationHealthStatus(status);
-        
         return podHealthResponse;
+
     }
 
-
-    private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
-
-        if(map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
-            return HealthCheckConstants.NOT_HEALTHY;
-        }
-        return HealthCheckConstants.HEALTHY;
-    }
 
 
 }

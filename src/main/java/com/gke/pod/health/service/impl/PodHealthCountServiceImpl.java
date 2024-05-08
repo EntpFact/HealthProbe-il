@@ -114,8 +114,12 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     public PodHealthResponse fetchApplicationStatus(V1PodList podList) {
         PodHealthResponse podHealthResponse=null;
 
+        log.info("with latest code ");
+
         Map<String,String> map=new HashMap<>();
         log.info("applications :::::: " + applications);
+
+
         List<String> serviceList = Arrays.stream(applications.split(",")).toList();
         log.info(" services list size :::::: " + serviceList.size());
 

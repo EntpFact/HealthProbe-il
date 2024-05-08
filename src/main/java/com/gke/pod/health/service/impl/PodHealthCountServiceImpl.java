@@ -68,31 +68,37 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
 
         if((criteria != null || criteria != "") && criteria.equalsIgnoreCase(HealthCheckConstants.PERCENTAGE)){
+            log.info("in statusCheckForPecentage");
             return statusCheckForPecentage(totalPodCount, totalHealthyPodCount, podHealthResponse);
         } else {
-           return statusCheckForOther(totalPodCount, totalHealthyPodCount, podHealthResponse);
+            log.info("in statusCheckForOther");
+            return statusCheckForOther(totalPodCount, totalHealthyPodCount, podHealthResponse);
         }
 
     }
 
     private static PodHealthResponse statusCheckForOther(int totalPodCount, int totalHealthyPodCount, PodHealthResponse podHealthResponse) {
+        log.info("totalPodCount==totalHealthyPodCount");
         return (totalPodCount==totalHealthyPodCount)?checkHealthy(podHealthResponse):checkNotHealthy(podHealthResponse);
 
     }
 
     private static PodHealthResponse statusCheckForPecentage(int totalPodCount, int totalHealthyPodCount, PodHealthResponse podHealthResponse) {
+        log.info("totalHealthyPodCount < (0.7 * totalPodCount");
         return (totalHealthyPodCount < (0.7 * totalPodCount))?checkNotHealthy(podHealthResponse):checkHealthy(podHealthResponse);
     }
 
 
 
     private static  PodHealthResponse checkHealthy(PodHealthResponse podHealthResponse){
-       podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
+        log.info("in checkHealthy");
+       podHealthResponse.setServiceHealthChecks(HealthCheckConstants.HEALTHY);
        return podHealthResponse;
     }
 
     private static  PodHealthResponse checkNotHealthy(PodHealthResponse podHealthResponse){
-        podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
+        log.info("in checkNotHealthy");
+        podHealthResponse.setServiceHealthChecks(HealthCheckConstants.NOT_HEALTHY);
         return podHealthResponse;
     }
 
@@ -133,11 +139,9 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
             podHealthResponse = getApplicationHealthStatus(totalHealthPodCountUsingServiceName, healthPodCountOnBasisOfService);
             log.info("healthPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService);
 
-
-            if(serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG) && podHealthResponse.getServiceHealthChecks().equals(HealthCheckConstants.HEALTHY))
+            if((serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG) || !serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)) && podHealthResponse.getServiceHealthChecks().equals(HealthCheckConstants.HEALTHY))
             {
                 podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
-              //  map.put(serviceName, podHealthResponse.getApplicationHealthStatus());
             }else {
                 podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
                 break;

@@ -19,6 +19,6 @@ public class PodHealthResponse {
 
     private String applicationHealthStatus;
 
-    private Map<String,String> serviceHealthChecks;
+    private String serviceHealthChecks;
 
 }

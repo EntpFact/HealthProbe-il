@@ -92,13 +92,13 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     private static  PodHealthResponse checkHealthy(PodHealthResponse podHealthResponse){
         log.info("in checkHealthy");
-       podHealthResponse.setServiceHealthChecks(HealthCheckConstants.HEALTHY);
+       podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
        return podHealthResponse;
     }
 
     private static  PodHealthResponse checkNotHealthy(PodHealthResponse podHealthResponse){
         log.info("in checkNotHealthy");
-        podHealthResponse.setServiceHealthChecks(HealthCheckConstants.NOT_HEALTHY);
+        podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
         return podHealthResponse;
     }
 
@@ -120,10 +120,12 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     public PodHealthResponse fetchApplicationStatus(V1PodList podList) {
         PodHealthResponse podHealthResponse=null;
 
-        log.info("with latest code ");
+        log.info("with latest code 9 may");
 
         Map<String,String> map=new HashMap<>();
         log.info("applications :::::: " + applications);
+
+
 
 
         List<String> serviceList = Arrays.stream(applications.split(",")).toList();
@@ -139,17 +141,24 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
             podHealthResponse = getApplicationHealthStatus(totalHealthPodCountUsingServiceName, healthPodCountOnBasisOfService);
             log.info("healthPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService);
 
-            if((serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG) || !serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)) && podHealthResponse.getServiceHealthChecks().equals(HealthCheckConstants.HEALTHY))
-            {
-                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
-            }else {
-                podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
-                break;
+            if (serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)) {
+                map.put(serviceName, podHealthResponse.getApplicationHealthStatus());
             }
         }
+        String status=checkApplicationStatusBasedOnServiceFlag(map);
+        podHealthResponse.setApplicationHealthStatus(status);
+
         return podHealthResponse;
 
     }
+
+        private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
+
+            if(map!=null && map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+                return HealthCheckConstants.NOT_HEALTHY;
+            }
+            return HealthCheckConstants.HEALTHY;
+        }
 
 
 

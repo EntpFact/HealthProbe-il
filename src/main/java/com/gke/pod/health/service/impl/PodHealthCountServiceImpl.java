@@ -1,5 +1,6 @@
 package com.gke.pod.health.service.impl;
 
+import com.gke.pod.health.config.KafkaConfig;
 import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
@@ -9,7 +10,9 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -35,6 +38,9 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     @Value("#{${health.servicelist}}")
     private Map<String,String> serviceMap;
+
+    @Autowired
+    KafkaConfig kafkaConfig;
 
 
 
@@ -152,13 +158,44 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     }
 
-        private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
+    @Override
+    public Health getKafkaHealth() {
+        return kafkaConfig.kafkaHealthIndicator().health();
+    }
 
-            if(map!=null && map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+    @Override
+    public Map<String, Object> fetchOverAllStatus(PodHealthResponse podHealthResponse, Health health) {
+
+        Map<String,Map<String,String>> kafkaOverAllStatus=new HashMap<>();
+        Map<String,String> kafkaStatus=new HashMap<>();
+        kafkaStatus.put("Status",health.getStatus().toString());
+        kafkaOverAllStatus.put("Kafka",kafkaStatus);
+        Map<String,Map<String,String>> kubenetesOverAllStatus=new HashMap<>();
+        Map<String,String> kubernetesStatus=new HashMap<>();
+        kubernetesStatus.put("Status",health.getStatus().toString());
+        kubenetesOverAllStatus.put("Kubernetes",kubernetesStatus);
+        Map<String,Object> finalOutput=new HashMap<>();
+        finalOutput.put("Kafka",kafkaOverAllStatus);
+        finalOutput.put("Kubernetes",kubenetesOverAllStatus);
+
+
+        if(kafkaStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)||kubernetesStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+            finalOutput.put("Status",HealthCheckConstants.HEALTHY);
+        }else{
+            finalOutput.put("Status",HealthCheckConstants.NOT_HEALTHY);
+        }
+        return finalOutput;
+    }
+    private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
+        if(map!=null && map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
                 return HealthCheckConstants.NOT_HEALTHY;
             }
             return HealthCheckConstants.HEALTHY;
+
         }
+
+
+
 
 
 

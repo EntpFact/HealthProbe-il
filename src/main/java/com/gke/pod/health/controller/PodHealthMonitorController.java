@@ -7,6 +7,7 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.health.Health;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/podhealth")
@@ -35,14 +37,13 @@ public class PodHealthMonitorController {
         try {
             V1PodList podList = podHealthCountService.fetchPodList();
             podHealthResponse = podHealthCountService.fetchApplicationStatus(podList);
-            applicationStatus=new HashMap<String,String>();
-            applicationStatus.put(HealthCheckConstants.APPLICATION_STATUS,podHealthResponse.getApplicationHealthStatus());
-
-
+            Health health= podHealthCountService.getKafkaHealth();
+            Map<String,Object> finalStatus= podHealthCountService.fetchOverAllStatus(podHealthResponse,health);
+            return ResponseEntity.ok(finalStatus);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
         }
-        return new ResponseEntity<>(applicationStatus, HttpStatus.OK);
+
     }
 }

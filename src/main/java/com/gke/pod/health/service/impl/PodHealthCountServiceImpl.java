@@ -1,6 +1,9 @@
 package com.gke.pod.health.service.impl;
 
-import com.gke.pod.health.config.KafkaConfig;
+
+//import com.gke.pod.health.config.KafkaConfig;
+
+import com.gke.pod.health.config.KafkaConfigNew;
 import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
@@ -10,20 +13,27 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.health.Health;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class PodHealthCountServiceImpl implements PodHealthCountService {
+
+
+    private final AdminClient adminClient;
+
+    private final DataSource dataSource;
 
 
     @Value("${health.namespace.value}")
@@ -39,10 +49,11 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Value("#{${health.servicelist}}")
     private Map<String,String> serviceMap;
 
-    @Autowired
-    KafkaConfig kafkaConfig;
+    public PodHealthCountServiceImpl(KafkaConfigNew kafkaConfigNew, AdminClient adminClient, DataSource dataSource) {
+        this.adminClient = adminClient;
 
-
+        this.dataSource = dataSource;
+    }
 
 
     @Override
@@ -74,10 +85,8 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
 
         if((criteria != null || criteria != "") && criteria.equalsIgnoreCase(HealthCheckConstants.PERCENTAGE)){
-            log.info("in statusCheckForPecentage");
             return statusCheckForPecentage(totalPodCount, totalHealthyPodCount, podHealthResponse);
         } else {
-            log.info("in statusCheckForOther");
             return statusCheckForOther(totalPodCount, totalHealthyPodCount, podHealthResponse);
         }
 
@@ -86,7 +95,6 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     private static PodHealthResponse statusCheckForOther(int totalPodCount, int totalHealthyPodCount, PodHealthResponse podHealthResponse) {
         log.info("totalPodCount==totalHealthyPodCount");
         return (totalPodCount==totalHealthyPodCount)?checkHealthy(podHealthResponse):checkNotHealthy(podHealthResponse);
-
     }
 
     private static PodHealthResponse statusCheckForPecentage(int totalPodCount, int totalHealthyPodCount, PodHealthResponse podHealthResponse) {
@@ -97,13 +105,13 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
 
     private static  PodHealthResponse checkHealthy(PodHealthResponse podHealthResponse){
-        log.info("in checkHealthy");
+
        podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.HEALTHY);
        return podHealthResponse;
     }
 
     private static  PodHealthResponse checkNotHealthy(PodHealthResponse podHealthResponse){
-        log.info("in checkNotHealthy");
+
         podHealthResponse.setApplicationHealthStatus(HealthCheckConstants.NOT_HEALTHY);
         return podHealthResponse;
     }
@@ -125,17 +133,9 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Override
     public PodHealthResponse fetchApplicationStatus(V1PodList podList) {
         PodHealthResponse podHealthResponse=null;
-
-        log.info("with latest code 9 may");
-
         Map<String,String> map=new HashMap<>();
-        log.info("applications :::::: " + applications);
-
-
-
-
         List<String> serviceList = Arrays.stream(applications.split(",")).toList();
-        log.info(" services list size :::::: " + serviceList.size());
+
 
         for (String serviceName : serviceList) {
 
@@ -157,46 +157,66 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         return podHealthResponse;
 
     }
-
     @Override
-    public Health getKafkaHealth() {
-        return kafkaConfig.kafkaHealthIndicator().health();
-    }
+    public Map<String, Object> fetchOverAllStatus(PodHealthResponse podHealthResponse, String health, String yugabyteDBStatus) {
 
-    @Override
-    public Map<String, Object> fetchOverAllStatus(PodHealthResponse podHealthResponse, Health health) {
 
-        Map<String,Map<String,String>> kafkaOverAllStatus=new HashMap<>();
         Map<String,String> kafkaStatus=new HashMap<>();
-        kafkaStatus.put("Status",health.getStatus().toString());
-        kafkaOverAllStatus.put("Kafka",kafkaStatus);
-        Map<String,Map<String,String>> kubenetesOverAllStatus=new HashMap<>();
+        kafkaStatus.put(HealthCheckConstants.STATUS,health);
         Map<String,String> kubernetesStatus=new HashMap<>();
-        kubernetesStatus.put("Status",health.getStatus().toString());
-        kubenetesOverAllStatus.put("Kubernetes",kubernetesStatus);
+        kubernetesStatus.put(HealthCheckConstants.STATUS,podHealthResponse.getApplicationHealthStatus());
+        Map<String,String> yugabyeStatus=new HashMap<>();
+        yugabyeStatus.put(HealthCheckConstants.STATUS,  yugabyteDBStatus);
         Map<String,Object> finalOutput=new HashMap<>();
-        finalOutput.put("Kafka",kafkaOverAllStatus);
-        finalOutput.put("Kubernetes",kubenetesOverAllStatus);
+        finalOutput.put(HealthCheckConstants.KAFKA,kafkaStatus);
+        finalOutput.put(HealthCheckConstants.KUBERNETES,kubernetesStatus);
+        finalOutput.put(HealthCheckConstants.YUGABYTE,yugabyeStatus);
 
-
-        if(kafkaStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)||kubernetesStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
-            finalOutput.put("Status",HealthCheckConstants.HEALTHY);
+        if(kafkaStatus.containsValue(HealthCheckConstants.NOT_HEALTHY) || kubernetesStatus.containsValue(HealthCheckConstants.NOT_HEALTHY) || yugabyeStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+            finalOutput.put(HealthCheckConstants.STATUS,HealthCheckConstants.NOT_HEALTHY);
         }else{
-            finalOutput.put("Status",HealthCheckConstants.NOT_HEALTHY);
+            finalOutput.put(HealthCheckConstants.STATUS,HealthCheckConstants.HEALTHY);
         }
         return finalOutput;
     }
+
+    @Override
+    public String fetchYugabyteDBStatus() {
+
+        try  {
+            if (dataSource.getConnection().isValid(HealthCheckConstants.DATASOURCE_TIMEOUT)) {
+                return HealthCheckConstants.HEALTHY;
+            } else {
+
+                return HealthCheckConstants.NOT_HEALTHY;
+            }
+
+        } catch (Exception e) {
+            return HealthCheckConstants.NOT_HEALTHY;
+
+        }
+
+        }
+
+
+       @Override
+       public String getKafkaStatus() {
+
+        try{
+            DescribeClusterResult describeClusterRequest=adminClient.describeCluster();
+            describeClusterRequest.nodes().get(HealthCheckConstants.TIMEOUT,TimeUnit.MILLISECONDS);
+            return HealthCheckConstants.HEALTHY;
+        }catch (Exception e){
+            e.printStackTrace();
+            return HealthCheckConstants.NOT_HEALTHY;
+        }
+
+    }
+
     private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
         if(map!=null && map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
                 return HealthCheckConstants.NOT_HEALTHY;
             }
             return HealthCheckConstants.HEALTHY;
-
-        }
-
-
-
-
-
-
+    }
 }

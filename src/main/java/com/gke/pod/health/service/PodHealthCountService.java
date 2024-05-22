@@ -3,8 +3,6 @@ package com.gke.pod.health.service;
 import com.gke.pod.health.entity.PodHealthResponse;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1PodList;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.Map;
@@ -26,9 +24,15 @@ public interface PodHealthCountService {
 
     PodHealthResponse fetchApplicationStatus(V1PodList podList);
 
-    Health getKafkaHealth();
+  //  Health getKafkaHealth();
 
-    Map<String,Object> fetchOverAllStatus(PodHealthResponse podHealthResponse,Health health);
+    Map<String,Object> fetchOverAllStatus(PodHealthResponse podHealthResponse,String health,String map);
+
+    String fetchYugabyteDBStatus();
+
+
+    String getKafkaStatus();
+
 
 
 }

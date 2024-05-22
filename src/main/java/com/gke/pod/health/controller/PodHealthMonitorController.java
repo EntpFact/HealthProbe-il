@@ -1,22 +1,18 @@
 package com.gke.pod.health.controller;
 
-import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
 import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.openapi.models.V1ServiceList;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.health.Health;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
+import javax.sql.DataSource;
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/podhealth")
@@ -28,17 +24,22 @@ public class PodHealthMonitorController {
 
     private PodHealthResponse podHealthResponse = null;
 
+    private final DataSource dataSource;
+
+    public PodHealthMonitorController(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
 
     @GetMapping(value = "/getHealthOfApplication")
     public ResponseEntity<?> getApplicationHealthStatus() {
-
-        Map<String,String> applicationStatus=null;
-
         try {
             V1PodList podList = podHealthCountService.fetchPodList();
             podHealthResponse = podHealthCountService.fetchApplicationStatus(podList);
-            Health health= podHealthCountService.getKafkaHealth();
-            Map<String,Object> finalStatus= podHealthCountService.fetchOverAllStatus(podHealthResponse,health);
+            String kafkaStatus=podHealthCountService.getKafkaStatus();
+            String yugabyteStatus=podHealthCountService.fetchYugabyteDBStatus();
+
+            Map<String,Object> finalStatus= podHealthCountService.fetchOverAllStatus(podHealthResponse,kafkaStatus,yugabyteStatus);
             return ResponseEntity.ok(finalStatus);
         } catch (Exception e) {
             e.printStackTrace();

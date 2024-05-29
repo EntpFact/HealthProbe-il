@@ -1,4 +1,4 @@
-apiVersion:  V1
+apiversion:  V1
 kind: ConfigMap
 metadata:
   name: healthcheckConfig

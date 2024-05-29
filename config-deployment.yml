@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: springbootconfigmap
+  template:
+    metadata:
+      labels:
+        app: springbootconfigmap
+    spec:
+      containers:
+        - name: springbootconfigmapcontainer
+          image: abhro/healthcheckusingconfigmap:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: applicationlist
+              valueFrom:
+                configMapKeyRef:
+                    name: healthcheckConfig
+                    key:  health.applicationlist
+            - name: namespaceValue
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: health.namespace.value
+            - name: criteria
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: health.application.criteria
+            - name: service
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: health.servicelist
+            - name: kafkaServer
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.kafka.bootstrap-servers
+            - name: kafkaOffset
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.kafka.consumer.auto-offset-reset
+            - name: kafkaConsumerGroup
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.kafka.consumer.group-id
+            - name: kafkaKeyConsumerDeserializer
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.kafka.consumer.key-deserializer
+            - name: kafkaValueConsumerDeserializer
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.kafka.consumer.value-deserializer
+            - name: kafkaKeyConsumerSerializer
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.kafka.consumer.key-serializer
+            - name: kafkaValueConsumerSerializer
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.kafka.consumer.value-serializer
+            - name: healthShow
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: management.endpoint.health.show-details
+            - name: webExposure
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: management.endpoints.web.exposure.include
+            - name: dataSourceUrl
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.datasource.url
+            - name: dbUserName
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.datasource.username
+            - name: dbPassword
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.datasource.password
+            - name: driverClass
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.datasource.driver-class-name
+            - name: dialect
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.jpa.properties.hibernate.dialect
+            - name: certificate
+              valueFrom:
+                configMapKeyRef:
+                  name: healthcheckConfig
+                  key: spring.datasource.root.cert
+

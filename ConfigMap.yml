@@ -1,0 +1,28 @@
+apiVersion:  V1
+kind: ConfigMap
+metadata:
+  name: healthcheckConfig
+data:
+  health.applicationlist: pod-healthcheck-demo-app,card-service
+  health.namespace.value: default
+  health.application.criteria: percentage
+  health.servicelist: ${SERVICE_LIST_WITH_FLAG:{'pod-healthcheck-demo-app':'Y','card-service':'N'}}
+  spring.kafka.bootstrap-servers: 10.182.0.2:9092
+  spring.kafka.consumer.auto-offset-reset: latest
+  spring.kafka.consumer.group-id: my-group
+  spring.kafka.consumer.key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  spring.kafka.consumer.value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  spring.kafka.consumer.key-serializer: org.apache.kafka.common.serialization.StringSerializer
+  spring.kafka.consumer.value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  management.endpoint.health.show-details: always
+  management.endpoints.web.exposure.include:  health,info
+  spring.datasource.url: jdbc:postgresql://us-west1.00064fdb-ee60-43a5-8fbf-efef397d47b7.gcp.ybdb.io:5433/yugabyte?ssl=true&sslmode=verify-full&sslrootcert=
+  spring.datasource.username: admin
+  spring.datasource.password: GQbWeq1BmT3X5Ogrt7C1LGFKmXqgY3
+  spring.datasource.driver-class-name: rg.postgresql.Driver
+  spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+  spring.datasource.root.cert:  /opt/cert/root.crt
+
+
+
+

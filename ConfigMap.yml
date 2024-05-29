@@ -1,7 +1,7 @@
 apiVersion:  v1
 kind: ConfigMap
 metadata:
-  name: healthcheckConfig
+  name: healthcheckconfig
 data:
   health.applicationlist: pod-healthcheck-demo-app,card-service
   health.namespace.value: default

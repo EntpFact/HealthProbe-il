@@ -19,7 +19,7 @@ data:
   spring.datasource.url: jdbc:postgresql://us-west1.00064fdb-ee60-43a5-8fbf-efef397d47b7.gcp.ybdb.io:5433/yugabyte?ssl=true&sslmode=verify-full&sslrootcert=
   spring.datasource.username: admin
   spring.datasource.password: GQbWeq1BmT3X5Ogrt7C1LGFKmXqgY3
-  spring.datasource.driver-class-name: rg.postgresql.Driver
+  spring.datasource.driver-class-name: org.postgresql.Driver
   spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
   spring.datasource.root.cert:  /opt/cert/root.crt
 

@@ -1,0 +1,9 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: service-reader-1
+rules:
+  - apiGroups: [""]
+    resources: ["services","pods","ingresses","nodes"]
+    verbs: ["get", "list", "watch"]

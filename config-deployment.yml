@@ -108,9 +108,5 @@ spec:
                 configMapKeyRef:
                   name: healthcheckconfig
                   key: spring.jpa.properties.hibernate.dialect
-            - name: certificate
-              valueFrom:
-                configMapKeyRef:
-                  name: healthcheckconfig
-                  key: spring.datasource.root.cert
+
 

@@ -35,6 +35,8 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     private final DataSource dataSource;
 
+    private final KafkaConfigNew kafkaConfigNew;
+
 
     @Value("${health.namespace.value}")
     private String nameSpaceValue;
@@ -49,10 +51,11 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Value("#{${health.servicelist}}")
     private Map<String,String> serviceMap;
 
-    public PodHealthCountServiceImpl(KafkaConfigNew kafkaConfigNew, AdminClient adminClient, DataSource dataSource) {
+    public PodHealthCountServiceImpl(KafkaConfigNew kafkaConfigNew, AdminClient adminClient, DataSource dataSource, KafkaConfigNew kafkaConfigNew1) {
         this.adminClient = adminClient;
 
         this.dataSource = dataSource;
+        this.kafkaConfigNew = kafkaConfigNew1;
     }
 
 
@@ -125,6 +128,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         ApiClient apiClient= Config.defaultClient();
         CoreV1Api api=new CoreV1Api(apiClient);
         V1PodList podList= api.listNamespacedPod(nameSpaceValue).execute();
+        log.info("podList:::::"+podList);
         return podList;
     }
 
@@ -143,9 +147,9 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
             log.info("totalHealthPodCountUsingServiceName::::::" + totalHealthPodCountUsingServiceName + "serviceName:::: " + serviceName);
             int healthPodCountOnBasisOfService = getHealthyPodCountUsingServiceName(podList, serviceName);
-            log.info("healthPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService + "serviceName:::: " + serviceName);
+            log.info("healthyPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService + "serviceName:::: " + serviceName);
             podHealthResponse = getApplicationHealthStatus(totalHealthPodCountUsingServiceName, healthPodCountOnBasisOfService);
-            log.info("healthPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService);
+
 
             if (serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)) {
                 map.put(serviceName, podHealthResponse.getApplicationHealthStatus());
@@ -214,6 +218,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     }
 
     private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
+        log.info("service Map::::::"+map);
         if(map!=null && map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
                 return HealthCheckConstants.NOT_HEALTHY;
             }

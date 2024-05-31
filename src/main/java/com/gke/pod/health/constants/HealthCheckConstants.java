@@ -19,7 +19,7 @@ public class HealthCheckConstants {
 
     public static final String KUBERNETES="Kubernetes";
 
-    public static final int TIMEOUT=5;
+    public static final int TIMEOUT=200;
 
     public static final int DATASOURCE_TIMEOUT=1;
 }

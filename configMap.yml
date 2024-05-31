@@ -3,10 +3,10 @@ kind: ConfigMap
 metadata:
   name: healthcheckconfig
 data:
-  health.applicationlist: audit-il-audit-services,outward-il-outward-channel-service,outwardsoap-il-outward-channel-service-soap
+  health.applicationlist: il-audit-services,il-outward-channel-service,il-outward-channel-service-soap
   health.namespace.value: insulationlayer
   health.application.criteria: percentage
-  health.servicelist: ${SERVICE_LIST_WITH_FLAG:{'audit-il-audit-services':'N','outward-il-outward-channel-service':'Y','outwardsoap-il-outward-channel-service-soap':'Y'}}
+  health.servicelist: ${SERVICE_LIST_WITH_FLAG:{'il-audit-services':'N','il-outward-channel-service':'Y','il-outward-channel-service-soap':'Y'}}
   spring.kafka.bootstrap-servers: 98.70.50.3:9092
   spring.kafka.consumer.auto-offset-reset: latest
   spring.kafka.consumer.group-id: my-group

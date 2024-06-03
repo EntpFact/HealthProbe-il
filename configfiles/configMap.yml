@@ -16,7 +16,7 @@ data:
   spring.kafka.consumer.value-serializer: org.apache.kafka.common.serialization.StringSerializer
   management.endpoint.health.show-details: always
   management.endpoints.web.exposure.include:  health,info
-  spring.datasource.url: jdbc:postgresql://74.225.160.55:5433/il-outward-gcp-poc-db
+  spring.datasource.url: jdbc:postgresql://20.40.42.101:5433/il-outward-gcp-poc-db
   spring.datasource.username: yugabyte
   spring.datasource.password: Ybdbazureecifpoc@123$
   spring.datasource.driver-class-name: org.postgresql.Driver

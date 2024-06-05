@@ -7,9 +7,15 @@ import com.gke.pod.health.config.KafkaConfigNew;
 import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1ContainerStatus;
+import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
@@ -76,8 +82,24 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     @Override
     public int getHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName) {
-        return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
+
+       for(V1Pod pod1: v1PodList.getItems()){
+
+           log.info("pod name::::::"+pod1.getMetadata().getName());
+            for(V1ContainerStatus v1ContainerStatus:pod1.getStatus().getContainerStatuses()){
+                log.info("containerName:::"+v1ContainerStatus.getName());
+                log.info("containerstatus::::"+v1ContainerStatus.getState());
+                if(v1ContainerStatus.getState().equals("Running")){
+                 log.info("container with running status found::::::");
+                }
+
+
+            }
+    }
+
+       return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
        && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
+       // return 0;
     }
     @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {
@@ -144,6 +166,9 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         for (String serviceName : serviceList) {
 
             int totalHealthPodCountUsingServiceName = getTotalHealthyPodCountUsingServiceName(podList, serviceName);
+
+
+
 
             log.info("totalHealthPodCountUsingServiceName::::::" + totalHealthPodCountUsingServiceName + "serviceName:::: " + serviceName);
             int healthPodCountOnBasisOfService = getHealthyPodCountUsingServiceName(podList, serviceName);

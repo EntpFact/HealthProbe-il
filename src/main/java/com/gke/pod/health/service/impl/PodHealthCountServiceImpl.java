@@ -7,10 +7,6 @@ import com.gke.pod.health.config.KafkaConfigNew;
 import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
 import com.gke.pod.health.service.PodHealthCountService;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
@@ -83,23 +79,28 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Override
     public int getHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName) {
 
-       for(V1Pod pod1: v1PodList.getItems()){
+        int counter=0;
+        for (V1Pod pod1 : v1PodList.getItems()) {
 
-           log.info("pod name::::::"+pod1.getMetadata().getName());
-            for(V1ContainerStatus v1ContainerStatus:pod1.getStatus().getContainerStatuses()){
-                log.info("containerName:::"+v1ContainerStatus.getName());
-                log.info("containerstatus::::"+v1ContainerStatus.getState());
-                if(v1ContainerStatus.getState().equals("Running")){
-                 log.info("container with running status found::::::");
+            log.info("pod name::::::" + pod1.getMetadata().getName());
+            for (V1ContainerStatus v1ContainerStatus : pod1.getStatus().getContainerStatuses()) {
+                log.info("containerName:::" + v1ContainerStatus.getName());
+                log.info("containerstatus::::" + v1ContainerStatus.getState());
+                if (v1ContainerStatus.getState().getRunning()!=null) {
+
+                    log.info("container with running status found::::::"+v1ContainerStatus.getName());
+                    counter++;
                 }
-
-
             }
-    }
+        }
+        log.info("count of running containers::::"+counter);
+       if(counter>0) {
+           return (int) v1PodList.getItems().stream().filter(pod -> pod.getMetadata().getLabels().containsKey("app") && pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
+                   && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
+       }else{
+           return 0;
+       }
 
-       return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
-       && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
-       // return 0;
     }
     @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {

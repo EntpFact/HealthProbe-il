@@ -22,11 +22,9 @@ import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -79,28 +77,20 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Override
     public int getHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName) {
 
-        int counter=0;
-        for (V1Pod pod1 : v1PodList.getItems()) {
-
-            log.info("pod name::::::" + pod1.getMetadata().getName());
+        List<V1Pod> podList=v1PodList.getItems().stream().filter(pod -> pod.getMetadata().getLabels().containsValue(serviceName)).collect(Collectors.toList());
+        for (V1Pod pod1 : podList) {
+            log.info("pod name new approach::::::" + pod1.getMetadata().getName());
             for (V1ContainerStatus v1ContainerStatus : pod1.getStatus().getContainerStatuses()) {
                 log.info("containerName:::" + v1ContainerStatus.getName());
                 log.info("containerstatus::::" + v1ContainerStatus.getState());
-                if (v1ContainerStatus.getState().getRunning()!=null) {
-
-                    log.info("container with running status found::::::"+v1ContainerStatus.getName());
-                    counter++;
+                if (v1ContainerStatus.getState().getTerminated()!=null || v1ContainerStatus.getState().getWaiting()!=null) {
+                    return 0;
                 }
             }
         }
-        log.info("count of running containers::::"+counter);
-       if(counter>0) {
-           return (int) v1PodList.getItems().stream().filter(pod -> pod.getMetadata().getLabels().containsKey("app") && pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
-                   && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
-       }else{
-           return 0;
-       }
 
+        return (int) v1PodList.getItems().stream().filter(pod -> pod.getMetadata().getLabels().containsKey("app") && pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
+                && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
     }
     @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {

@@ -3,6 +3,7 @@ package com.gke.pod.health.service.impl;
 
 //import com.gke.pod.health.config.KafkaConfig;
 
+//import com.gke.pod.health.config.KafkaConfigNew;
 import com.gke.pod.health.config.KafkaConfigNew;
 import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
@@ -10,9 +11,7 @@ import com.gke.pod.health.service.PodHealthCountService;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1ContainerStatus;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -30,9 +29,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PodHealthCountServiceImpl implements PodHealthCountService {
 
-
+//
     private final AdminClient adminClient;
-
+//
     private final DataSource dataSource;
 
     private final KafkaConfigNew kafkaConfigNew;
@@ -51,6 +50,15 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Value("#{${health.servicelist}}")
     private Map<String,String> serviceMap;
 
+
+    @Value("#{${health.applist}}")
+    private Map<String,String> applicationMap;
+
+//    public PodHealthCountServiceImpl(AdminClient adminClient, KafkaConfigNew kafkaConfigNew) {
+//        this.adminClient = adminClient;
+//        this.kafkaConfigNew = kafkaConfigNew;
+//    }
+
     public PodHealthCountServiceImpl(KafkaConfigNew kafkaConfigNew, AdminClient adminClient, DataSource dataSource, KafkaConfigNew kafkaConfigNew1) {
         this.adminClient = adminClient;
 
@@ -59,8 +67,12 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     }
 
 
+
+
+
     @Override
     public int getTotalPodCount(V1PodList v1PodList) {
+//        log.info("Get TotalPodCount $$$"+ (int) v1PodList.getItems().stream().count());
         return (int) v1PodList.getItems().stream().count();
     }
 
@@ -71,33 +83,69 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     @Override
     public int getTotalHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName) {
-        return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)).count();
+//        return (int) v1PodList.getItems().stream().filter(pod->pod.getMetadata().getLabels().containsKey("app")&& pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)).count();
+        return (int) v1PodList.getItems().stream()
+                .filter(pod -> serviceName.equalsIgnoreCase(pod.getMetadata().getLabels() != null ? pod.getMetadata().getLabels().get("app") : null))
+                .count();
     }
 
     @Override
     public int getHealthyPodCountUsingServiceName(V1PodList v1PodList,String serviceName) {
 
         List<V1Pod> podList=v1PodList.getItems().stream().filter(pod -> pod.getMetadata().getLabels().containsValue(serviceName)).collect(Collectors.toList());
+//        for (V1Pod pod1 : podList) {
+//            log.info("pod name new approach::::::" + pod1.getMetadata().getName());
+//            for (V1ContainerStatus v1ContainerStatus : pod1.getStatus().getContainerStatuses()) {
+//                log.info("containerName:::" + v1ContainerStatus.getName());
+//                log.info("containerstatus::::" + v1ContainerStatus.getState());
+//                if (v1ContainerStatus.getState().getTerminated()!=null || v1ContainerStatus.getState().getWaiting()!=null) {
+//                    return 0;
+//                }
+//            }
+//        }
+
+
         for (V1Pod pod1 : podList) {
             log.info("pod name new approach::::::" + pod1.getMetadata().getName());
-            for (V1ContainerStatus v1ContainerStatus : pod1.getStatus().getContainerStatuses()) {
-                log.info("containerName:::" + v1ContainerStatus.getName());
-                log.info("containerstatus::::" + v1ContainerStatus.getState());
-                if (v1ContainerStatus.getState().getTerminated()!=null || v1ContainerStatus.getState().getWaiting()!=null) {
-                    return 0;
+            int containercount=0;
+            // Check if containerStatuses is not null before iterating
+            if (pod1.getStatus() != null && pod1.getStatus().getContainerStatuses() != null) {
+//                log.info("containerSize:::"+pod1.getStatus().getContainerStatuses().size());
+                for (V1ContainerStatus v1ContainerStatus : pod1.getStatus().getContainerStatuses()) {
+                    log.info("containerName:::" + v1ContainerStatus.getName());
+                    log.info("containerstatus::::" + v1ContainerStatus.getState());
+
+                    // Check if container is in a Terminated or Waiting state
+                    if (v1ContainerStatus.getState().getTerminated() != null || v1ContainerStatus.getState().getWaiting() != null) {
+                        return 0;
+                    }
+                    else{
+                        containercount++;
+                    }
                 }
+                log.info("for the pod {} number of container running {}",pod1.getMetadata().getName(),containercount);
+            } else {
+                log.warn("Container statuses are not available for pod: " + pod1.getMetadata().getName());
             }
         }
 
-        return (int) v1PodList.getItems().stream().filter(pod -> pod.getMetadata().getLabels().containsKey("app") && pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
-                && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
+
+
+//        return (int) v1PodList.getItems().stream().filter(pod -> pod.getMetadata().getLabels().containsKey("app") && pod.getMetadata().getLabels().get("app").equalsIgnoreCase(serviceName)
+//                && pod.getStatus().getPhase().equalsIgnoreCase("Running")).count();
+        return (int) v1PodList.getItems().stream()
+                .filter(pod -> "Running".equalsIgnoreCase(pod.getStatus().getPhase())
+                        && serviceName.equalsIgnoreCase(pod.getMetadata().getLabels().get("app")))
+                .count();
     }
     @Override
     public PodHealthResponse getApplicationHealthStatus(int totalPodCount, int totalHealthyPodCount) {
 
 
+
         PodHealthResponse podHealthResponse=new PodHealthResponse();
         podHealthResponse.setTotalPodCount(totalPodCount);
+
         podHealthResponse.setTotalHealthyPodCount(totalHealthyPodCount);
 
         if((criteria != null || criteria != "") && criteria.equalsIgnoreCase(HealthCheckConstants.PERCENTAGE)){
@@ -115,7 +163,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     private static PodHealthResponse statusCheckForPecentage(int totalPodCount, int totalHealthyPodCount, PodHealthResponse podHealthResponse) {
         log.info("totalHealthyPodCount < (0.7 * totalPodCount");
-        return (totalHealthyPodCount < (0.7 * totalPodCount))?checkNotHealthy(podHealthResponse):checkHealthy(podHealthResponse);
+        return (totalHealthyPodCount < (0.7 * totalPodCount) || totalPodCount==0)?checkNotHealthy(podHealthResponse):checkHealthy(podHealthResponse);
     }
 
 
@@ -141,9 +189,83 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         ApiClient apiClient= Config.defaultClient();
         CoreV1Api api=new CoreV1Api(apiClient);
         V1PodList podList= api.listNamespacedPod(nameSpaceValue).execute();
-        log.info("podList:::::"+podList);
+       // log.info("podList:::::"+podList);
         return podList;
     }
+
+    @Override
+    public int getServicesInNamespace() throws ApiException, IOException {
+        // Fetch services from the specified namespace
+        ApiClient apiClient = null;
+        try {
+            apiClient = Config.defaultClient();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        CoreV1Api api = new CoreV1Api(apiClient);
+        V1ServiceList serviceList = api.listNamespacedService(
+                nameSpaceValue // Allow watch bookmarks (optional)
+        ).execute();
+
+        log.info("serviceList:::::" + serviceList);
+
+
+
+//        V1Service service = api.readNamespacedService("il-e2e-latency-aggregator", nameSpaceValue).execute();
+//
+//        // Extract label selector from the service
+//        Map<String, String> labels = service.getSpec().getSelector();
+//        if (labels == null || labels.isEmpty()) {
+//            throw new ApiException("Service does not have any labels.");
+//        }
+//
+//        // Convert label selector map to a format suitable for listNamespacedPod
+//        String labelSelector = labels.entrySet().stream()
+//                .map(entry -> entry.getKey() + "=" + entry.getValue())
+//                .collect(Collectors.joining(","));
+//
+//        // Fetch all pods in the namespace
+        V1PodList allPods = api.listNamespacedPod(
+                nameSpaceValue
+                // pretty print
+                // continue token
+                // field selector
+                // label selector (null here to get all pods)
+                // limit
+                // resource version
+                // timeout
+                // watch
+                // allow watch bookmarks
+        ).execute();
+//
+//        // Filter pods based on the label selector
+//        List<V1Pod> reversedPods = allPods.getItems().stream()
+//                .collect(Collectors.collectingAndThen(
+//                        Collectors.toList(), // Collect to a list
+//                        list -> {
+//                            // Reverse the list
+//                            Collections.reverse(list);
+//                            return list;
+//                        }
+//                ));
+//
+//        return reversedPods.size();
+
+        String serviceName="il-audit-services";
+        return (int) allPods.getItems().stream()
+                .filter(pod -> serviceName.equalsIgnoreCase(pod.getMetadata().getLabels() != null ? pod.getMetadata().getLabels().get("app") : null))
+                .count();
+
+//        return (int) allPods.getItems().stream()
+//                .filter(pod -> "Running".equalsIgnoreCase(pod.getStatus().getPhase())
+//                        && serviceName.equalsIgnoreCase(pod.getMetadata().getLabels().get("app")))
+//                .count();
+    }
+
+
+
+
+
 
 
 
@@ -152,7 +274,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         PodHealthResponse podHealthResponse=null;
         Map<String,String> map=new HashMap<>();
         List<String> serviceList = Arrays.stream(applications.split(",")).toList();
-
+        log.info("Get Total Running PodCount $$$"+ (int) podList.getItems().stream().filter(pod->"Running".equalsIgnoreCase(pod.getStatus().getPhase())).count());
 
         for (String serviceName : serviceList) {
 
@@ -161,14 +283,22 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
 
 
-            log.info("totalHealthPodCountUsingServiceName::::::" + totalHealthPodCountUsingServiceName + "serviceName:::: " + serviceName);
+            log.info("totalHealthPodCountUsingServiceName::::::" + totalHealthPodCountUsingServiceName + " serviceName:::: " + serviceName);
             int healthPodCountOnBasisOfService = getHealthyPodCountUsingServiceName(podList, serviceName);
-            log.info("healthyPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService + "serviceName:::: " + serviceName);
+            log.info("healthyPodCountOnBasisOfService::::::" + healthPodCountOnBasisOfService + " serviceName:::: " + serviceName);
             podHealthResponse = getApplicationHealthStatus(totalHealthPodCountUsingServiceName, healthPodCountOnBasisOfService);
 
-
-            if (serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)) {
-                map.put(serviceName, podHealthResponse.getApplicationHealthStatus());
+            try {
+                if (serviceMap.get(serviceName).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG)) {
+                    map.put(serviceName, podHealthResponse.getApplicationHealthStatus());
+                }
+            }
+            catch (NullPointerException e)
+            {
+//                String status=HealthCheckConstants.NO_SERVICE;
+                String status=checkApplicationStatusBasedOnServiceFlag(map);
+                podHealthResponse.setApplicationHealthStatus(status);
+                return podHealthResponse;
             }
         }
         String status=checkApplicationStatusBasedOnServiceFlag(map);
@@ -188,15 +318,41 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         Map<String,String> yugabyeStatus=new HashMap<>();
         yugabyeStatus.put(HealthCheckConstants.STATUS,  yugabyteDBStatus);
         Map<String,Object> finalOutput=new HashMap<>();
-        finalOutput.put(HealthCheckConstants.KAFKA,kafkaStatus);
-        finalOutput.put(HealthCheckConstants.KUBERNETES,kubernetesStatus);
-        finalOutput.put(HealthCheckConstants.YUGABYTE,yugabyeStatus);
+        boolean flag=true;
+        if(applicationMap.get("Kafka").equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG))
+        {
+            finalOutput.put(HealthCheckConstants.KAFKA,kafkaStatus);
+            if(kafkaStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+                flag=false;
+            }
+        }
+        if(applicationMap.get("Yugabyte").equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG))
+        {
+            finalOutput.put(HealthCheckConstants.YUGABYTE,yugabyeStatus);
+            if(yugabyeStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+                flag=false;
+            }
+        }
 
-        if(kafkaStatus.containsValue(HealthCheckConstants.NOT_HEALTHY) || kubernetesStatus.containsValue(HealthCheckConstants.NOT_HEALTHY) || yugabyeStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+        finalOutput.put(HealthCheckConstants.KUBERNETES,kubernetesStatus);
+
+        if(kubernetesStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)||kubernetesStatus.containsValue(HealthCheckConstants.NO_SERVICE)){
+            flag=false;
+        }
+
+//        if(kafkaStatus.containsValue(HealthCheckConstants.NOT_HEALTHY) || kubernetesStatus.containsValue(HealthCheckConstants.NOT_HEALTHY) || yugabyeStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
+//            finalOutput.put(HealthCheckConstants.STATUS,HealthCheckConstants.NOT_HEALTHY);
+//        }else{
+//            finalOutput.put(HealthCheckConstants.STATUS,HealthCheckConstants.HEALTHY);
+//        }
+        if(flag==false)
+        {
             finalOutput.put(HealthCheckConstants.STATUS,HealthCheckConstants.NOT_HEALTHY);
-        }else{
+        }
+        else{
             finalOutput.put(HealthCheckConstants.STATUS,HealthCheckConstants.HEALTHY);
         }
+
         return finalOutput;
     }
 
@@ -215,7 +371,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
             return HealthCheckConstants.NOT_HEALTHY;
 
         }
-
+//        return "Up";
         }
 
 
@@ -224,7 +380,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
         try{
             DescribeClusterResult describeClusterRequest=adminClient.describeCluster();
-            describeClusterRequest.nodes().get(HealthCheckConstants.TIMEOUT,TimeUnit.MILLISECONDS);
+            describeClusterRequest.nodes().get(HealthCheckConstants.TIMEOUT, TimeUnit.MILLISECONDS);
             return HealthCheckConstants.HEALTHY;
         }catch (Exception e){
             e.printStackTrace();
@@ -235,6 +391,11 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     private String checkApplicationStatusBasedOnServiceFlag(Map<String, String> map) {
         log.info("service Map::::::"+map);
+        if(map.isEmpty())
+        {
+            log.info("service Map::::::null");
+            return HealthCheckConstants.NO_SERVICE;
+        }
         if(map!=null && map.containsValue(HealthCheckConstants.NOT_HEALTHY)){
                 return HealthCheckConstants.NOT_HEALTHY;
             }

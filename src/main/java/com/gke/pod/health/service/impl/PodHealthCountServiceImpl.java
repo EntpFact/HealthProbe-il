@@ -53,7 +53,6 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
     public PodHealthCountServiceImpl(AdminClient adminClient, DataSource dataSource, KafkaConfigNew kafkaConfigNew1) {
         this.adminClient = adminClient;
-
         this.dataSource = dataSource;
         this.kafkaConfigNew = kafkaConfigNew1;
     }

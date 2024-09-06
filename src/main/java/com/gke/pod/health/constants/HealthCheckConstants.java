@@ -7,6 +7,10 @@ public class HealthCheckConstants {
 
     public static final String HEALTHY="Up";
 
+    public static final String KAFKA="Kafka";
+
+    public static final String YUGABYTE="Yugabyte";
+
     public static final String SERVICE_FLAG="Y";
 
     public static final String NO_SERVICE="No-service available";
@@ -15,9 +19,6 @@ public class HealthCheckConstants {
 
     public static final String STATUS="Status";
 
-    public static final String KAFKA="Kafka";
-
-    public static final String YUGABYTE="Yugabyte";
 
     public static final String KUBERNETES="Kubernetes";
 

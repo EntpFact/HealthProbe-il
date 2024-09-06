@@ -28,11 +28,11 @@ public class PodHealthMonitorController {
 
     private PodHealthResponse podHealthResponse = null;
 
-//    private final DataSource dataSource;
+    private final DataSource dataSource;
 
-//    public PodHealthMonitorController(DataSource dataSource) {
-//        this.dataSource = dataSource;
-//    }
+    public PodHealthMonitorController(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
 
     @GetMapping(value = "/getHealthOfApplication")

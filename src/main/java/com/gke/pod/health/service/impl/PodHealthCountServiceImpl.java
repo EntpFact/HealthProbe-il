@@ -1,9 +1,6 @@
 package com.gke.pod.health.service.impl;
 
 
-//import com.gke.pod.health.config.KafkaConfig;
-
-//import com.gke.pod.health.config.KafkaConfigNew;
 import com.gke.pod.health.config.KafkaConfigNew;
 import com.gke.pod.health.constants.HealthCheckConstants;
 import com.gke.pod.health.entity.PodHealthResponse;
@@ -29,9 +26,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PodHealthCountServiceImpl implements PodHealthCountService {
 
-//
     private final AdminClient adminClient;
-//
+
     private final DataSource dataSource;
 
     private final KafkaConfigNew kafkaConfigNew;
@@ -54,12 +50,8 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
     @Value("#{${health.applist}}")
     private Map<String,String> applicationMap;
 
-//    public PodHealthCountServiceImpl(AdminClient adminClient, KafkaConfigNew kafkaConfigNew) {
-//        this.adminClient = adminClient;
-//        this.kafkaConfigNew = kafkaConfigNew;
-//    }
 
-    public PodHealthCountServiceImpl(KafkaConfigNew kafkaConfigNew, AdminClient adminClient, DataSource dataSource, KafkaConfigNew kafkaConfigNew1) {
+    public PodHealthCountServiceImpl(AdminClient adminClient, DataSource dataSource, KafkaConfigNew kafkaConfigNew1) {
         this.adminClient = adminClient;
 
         this.dataSource = dataSource;
@@ -106,7 +98,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
 
         for (V1Pod pod1 : podList) {
-            log.info("pod name new approach::::::" + pod1.getMetadata().getName());
+            log.info("pod name ::::::" + pod1.getMetadata().getName());
             int containercount=0;
             // Check if containerStatuses is not null before iterating
             if (pod1.getStatus() != null && pod1.getStatus().getContainerStatuses() != null) {
@@ -211,45 +203,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
 
 
 
-//        V1Service service = api.readNamespacedService("il-e2e-latency-aggregator", nameSpaceValue).execute();
-//
-//        // Extract label selector from the service
-//        Map<String, String> labels = service.getSpec().getSelector();
-//        if (labels == null || labels.isEmpty()) {
-//            throw new ApiException("Service does not have any labels.");
-//        }
-//
-//        // Convert label selector map to a format suitable for listNamespacedPod
-//        String labelSelector = labels.entrySet().stream()
-//                .map(entry -> entry.getKey() + "=" + entry.getValue())
-//                .collect(Collectors.joining(","));
-//
-//        // Fetch all pods in the namespace
-        V1PodList allPods = api.listNamespacedPod(
-                nameSpaceValue
-                // pretty print
-                // continue token
-                // field selector
-                // label selector (null here to get all pods)
-                // limit
-                // resource version
-                // timeout
-                // watch
-                // allow watch bookmarks
-        ).execute();
-//
-//        // Filter pods based on the label selector
-//        List<V1Pod> reversedPods = allPods.getItems().stream()
-//                .collect(Collectors.collectingAndThen(
-//                        Collectors.toList(), // Collect to a list
-//                        list -> {
-//                            // Reverse the list
-//                            Collections.reverse(list);
-//                            return list;
-//                        }
-//                ));
-//
-//        return reversedPods.size();
+        V1PodList allPods = api.listNamespacedPod(nameSpaceValue).execute();
 
         String serviceName="il-audit-services";
         return (int) allPods.getItems().stream()
@@ -319,14 +273,14 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
         yugabyeStatus.put(HealthCheckConstants.STATUS,  yugabyteDBStatus);
         Map<String,Object> finalOutput=new HashMap<>();
         boolean flag=true;
-        if(applicationMap.get("Kafka").equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG))
+        if(applicationMap.get(HealthCheckConstants.KAFKA).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG))
         {
             finalOutput.put(HealthCheckConstants.KAFKA,kafkaStatus);
             if(kafkaStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
                 flag=false;
             }
         }
-        if(applicationMap.get("Yugabyte").equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG))
+        if(applicationMap.get(HealthCheckConstants.YUGABYTE).equalsIgnoreCase(HealthCheckConstants.SERVICE_FLAG))
         {
             finalOutput.put(HealthCheckConstants.YUGABYTE,yugabyeStatus);
             if(yugabyeStatus.containsValue(HealthCheckConstants.NOT_HEALTHY)){
@@ -384,6 +338,7 @@ public class PodHealthCountServiceImpl implements PodHealthCountService {
             return HealthCheckConstants.HEALTHY;
         }catch (Exception e){
             e.printStackTrace();
+            log.info(":::::Kafka Timeout Exception::::::");
             return HealthCheckConstants.NOT_HEALTHY;
         }
 
